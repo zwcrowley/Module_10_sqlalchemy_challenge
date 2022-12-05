@@ -104,10 +104,13 @@ def tobs_by_startDate(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
     """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date."""
-    # Query the last 12 months of precipitation data
-    start_date_qry = session.query(measurement.date, func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
-        filter(measurement.date >= dt.date(start)).\
-        filter(measurement.date <= dt.date(end)).all()
+    # Def a func to convert the string date to datetime:
+    def toDate(dateString): 
+        return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
+    start_date = toDate(start)
+    # Query the data for the specified start date, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date.
+    start_date_qry = session.query(func.min(measurement.tobs),func.avg(measurement.tobs),func.max(measurement.tobs)).\
+        filter(measurement.date >= start_date).all()
  
     session.close()
 
@@ -116,22 +119,28 @@ def tobs_by_startDate(start):
     
     return jsonify(start_date_qry_list)
 
-# @app.route("/api/v1.0/<start>/<end>")
-# def tobs_by_startDate(start,end):
-#     # Create our session (link) from Python to the DB
-#     session = Session(engine)
-#     """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive."""
-#     # Query the last 12 months of precipitation data
-#     start_end_date_qry = session.query(measurement.date, func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
-#         filter(measurement.date >= dt.date(start)).\
-#         filter(measurement.date <= dt.date(end)).all()
- 
-#     session.close()
+@app.route("/api/v1.0/<start>/<end>")
+def tobs_by_start_endDate(start,end):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+    """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive."""
+    # Def a func to convert the string date to datetime:
+    def toDate(dateString): 
+        return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
+    start_date = toDate(start)
+    end_date = toDate(end)
 
-#     # Convert list of tuples into normal list
-#     start_end_date_qry_list = list(np.ravel(start_end_date_qry))
+    # Query the data for the specified start and end dates, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date.
+    start_end_date_qry = session.query(func.min(measurement.tobs),func.avg(measurement.tobs),func.max(measurement.tobs)).\
+        filter(measurement.date >= start_date).\
+        filter(measurement.date <= end_date).all()
+ 
+    session.close()
+
+    # Convert list of tuples into normal list
+    start_end_date_qry_list = list(np.ravel(start_end_date_qry))
     
-#     return jsonify(start_end_date_qry_list)
+    return jsonify(start_end_date_qry_list)
 
 if __name__ == "__main__":
     app.run(debug=True)
