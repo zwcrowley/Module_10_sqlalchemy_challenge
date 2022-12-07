@@ -118,8 +118,15 @@ def tobs_by_startDate(start):
     def toDate(dateString): 
         return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
     start_date = toDate(start)
+    min_date = toDate("2010-1-1")
+    max_date = toDate("2017-8-23")
 
-    if start_date <= dt.date(2017, 8, 23) or start_date >= dt.date(2010, 1, 1):
+    # If/else to return an error if start date is outside of data range:
+    if start_date < min_date or start_date > max_date:
+        
+        return jsonify({"error": f"Date {start_date} is outside data, input date between 2010-01-01 and 2017-08-23 ."}), 404
+
+    else:   
         # Query the data for the specified start date, calculate min, max, and avg for all the dates greater than or equal to the start date.
         start_date_qry = session.query(func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
         filter(measurement.date >= start_date).all()
@@ -130,8 +137,6 @@ def tobs_by_startDate(start):
         start_date_qry_list = list(np.ravel(start_date_qry))
     
         return jsonify(start_date_qry_list)
-
-    return jsonify({"error": f"Date {start_date} is outside data, input date between 2010-01-01 and 2017-08-23 ."}), 404
 
 
 @app.route("/api/v1.0//start_end_date/<start>/<end>")
@@ -144,18 +149,30 @@ def tobs_by_start_endDate(start,end):
         return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
     start_date = toDate(start)
     end_date = toDate(end)
+    min_date = toDate("2010-1-1")
+    max_date = toDate("2017-8-23")
 
-    # Query the data for the specified start and end dates, calculate min, max, and avg for all the dates greater than or equal to the start date.
-    start_end_date_qry = session.query(func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
-        filter(measurement.date >= start_date).\
-        filter(measurement.date <= end_date).all()
- 
-    session.close()
-
-    # Convert list of tuples into normal list
-    start_end_date_qry_list = list(np.ravel(start_end_date_qry))
+    # If/else to return an error if start or end dates are outside of data range:
+    if start_date < min_date or start_date > max_date:
+        
+        return jsonify({"error": f"Date {start_date} is outside data, input date between 2010-01-01 and 2017-08-23 ."}), 404
     
-    return jsonify(start_end_date_qry_list)
+    elif end_date < min_date or end_date > max_date:
+        
+        return jsonify({"error": f"Date {end_date} is outside data, input date between 2010-01-01 and 2017-08-23 ."}), 404
+
+    else:   
+        # Query the data for the specified start and end dates, calculate min, max, and avg for all the dates greater than or equal to the start date.
+        start_end_date_qry = session.query(func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
+            filter(measurement.date >= start_date).\
+            filter(measurement.date <= end_date).all()
+ 
+        session.close()
+
+        # Convert list of tuples into normal list
+        start_end_date_qry_list = list(np.ravel(start_end_date_qry))
+    
+        return jsonify(start_end_date_qry_list)
 
 if __name__ == "__main__":
     app.run(debug=True)
