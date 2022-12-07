@@ -34,11 +34,21 @@ app = Flask(__name__)
 def welcome():
     """List all available api routes for Zack's Hawaii Climate App."""
     return (
-        f"Welcome to the Zack's Hawaii Climate API!<br/>"
-        f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs"
+        f"<strong>Welcome to the Zack's Hawaii Climate API!</strong> <br/> <br/>"
+        f"<em>Available Static Routes:</em> <br/>"
+        f"<strong>/api/v1.0/precipitation</strong> <br/>"
+        f"<strong>/api/v1.0/stations</strong> <br/>"
+        f"<strong>/api/v1.0/tobs</strong> <br/> <br/>"
+        f"<em>Available Dynamic Routes:</em> <br/>"
+        f"<strong>/api/v1.0/start_date</strong> <br/>"
+        f"<ul> Accepts the start date as a parameter in the URL, using this format: YYYY-MM-DD <br/>"
+        f"For example: /api/v1.0/start_date/2015-8-16 <br/>"
+        f"Min input date: 2010-01-01 - Max input date: 2017-08-23 <br/>"
+        f"Returns the min, max, and average temperatures calculated from the given start date to the end of the dataset </ul> <br/>"
+        f"<strong>/api/v1.0/start_end_date</strong> <br/>"
+        f"<ul> Accepts the start date and end dates as parameters in the URL, using this format: YYYY-MM-DD <br/>"
+        f"For example: /api/v1.0/start_end_date/2015-8-16/2017-1-1 <br/>"
+        f"Returns the min, max, and average temperatures calculated from the given start date to the given end date from the dataset </ul> "
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -99,39 +109,44 @@ def tobs():
     
     return jsonify(most_active_year_list)
 
-@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0//start_date/<start>")
 def tobs_by_startDate(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date."""
+    """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start, calculate min, max, and avg for all the dates greater than or equal to the start date."""
     # Def a func to convert the string date to datetime:
     def toDate(dateString): 
         return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
     start_date = toDate(start)
-    # Query the data for the specified start date, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date.
-    start_date_qry = session.query(func.min(measurement.tobs),func.avg(measurement.tobs),func.max(measurement.tobs)).\
+
+    if start_date <= dt.date(2017, 8, 23) or start_date >= dt.date(2010, 1, 1):
+        # Query the data for the specified start date, calculate min, max, and avg for all the dates greater than or equal to the start date.
+        start_date_qry = session.query(func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
         filter(measurement.date >= start_date).all()
  
-    session.close()
+        session.close()
 
-    # Convert list of tuples into normal list
-    start_date_qry_list = list(np.ravel(start_date_qry))
+        # Convert list of tuples into normal list
+        start_date_qry_list = list(np.ravel(start_date_qry))
     
-    return jsonify(start_date_qry_list)
+        return jsonify(start_date_qry_list)
 
-@app.route("/api/v1.0/<start>/<end>")
+    return jsonify({"error": f"Date {start_date} is outside data, input date between 2010-01-01 and 2017-08-23 ."}), 404
+
+
+@app.route("/api/v1.0//start_end_date/<start>/<end>")
 def tobs_by_start_endDate(start,end):
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive."""
+    """Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range. For a specified start date and end date, calculate min, max, and avg for the dates from the start date to the end date, inclusive."""
     # Def a func to convert the string date to datetime:
     def toDate(dateString): 
         return dt.datetime.strptime(dateString, "%Y-%m-%d").date()
     start_date = toDate(start)
     end_date = toDate(end)
 
-    # Query the data for the specified start and end dates, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date.
-    start_end_date_qry = session.query(func.min(measurement.tobs),func.avg(measurement.tobs),func.max(measurement.tobs)).\
+    # Query the data for the specified start and end dates, calculate min, max, and avg for all the dates greater than or equal to the start date.
+    start_end_date_qry = session.query(func.min(measurement.tobs),func.max(measurement.tobs),func.avg(measurement.tobs)).\
         filter(measurement.date >= start_date).\
         filter(measurement.date <= end_date).all()
  
