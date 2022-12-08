@@ -25,11 +25,9 @@ measurement = Base.classes.measurement
 #################################################
 app = Flask(__name__)
 
-
 #################################################
 # Flask Routes
 #################################################
-
 @app.route("/")
 def welcome():
     """List all available api routes for Zack's Hawaii Climate App."""
